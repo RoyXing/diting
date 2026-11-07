@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'sha256-LJafnlhyBy9zlvaFaC5eKmoRTrtPwknV05zxD7dPDYY='; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>归档 · 谛听</title><style>
 :root{color-scheme:light;--bg:#f6f5fa;--surface:#fff;--surface2:#f1effa;--line:#e4e1ef;--line2:#d5d1e6;--ink:#15141f;--ink2:#4a495d;--mut:#66647e;
@@ -52,6 +52,7 @@ h3.sec{font-size:13px;color:var(--mut);margin:22px 0 10px;font-weight:600;letter
 .dayhead i{font:400 13px/1 -apple-system,"PingFang SC",sans-serif;color:var(--mut);letter-spacing:0}
 /* toolbar: tag chips + compact switch */
 .tools{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;margin:14px 0 0}
+.tools.seenrow{justify-content:flex-start}
 .tags{display:flex;gap:6px;flex-wrap:wrap;flex:1}
 .tags a{font-size:13px;text-decoration:none;color:var(--ink2);border:1px solid var(--line2);background:var(--surface);border-radius:20px;padding:2px 11px;line-height:24px}
 .tags a:hover{color:var(--acc);border-color:var(--acc-line)}
@@ -77,6 +78,18 @@ article.fresh{border-left:3px solid var(--new)}
 .cm:checked~main article p,.cm:checked~main article .go{display:none}
 .cm:checked~main article{padding:12px 18px;margin-bottom:8px;border-radius:12px;box-shadow:none}
 .cm:checked~main article h3{font-size:16.5px;margin:4px 0 2px}
+/* read / unseen */
+.seenbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--ink2)}
+.seenbar[hidden],.js[hidden]{display:none}
+.unseen{color:var(--acc);font-variant-numeric:tabular-nums}
+.tbtn{font:inherit;font-size:13px;color:var(--ink2);border:1px solid var(--line2);background:var(--surface);border-radius:20px;padding:2px 12px;line-height:24px;cursor:pointer}
+.tbtn:hover{color:var(--acc);border-color:var(--acc-line)}.tbtn.on{color:var(--acc);border-color:var(--acc-line);background:var(--acc-soft)}
+.seenrow{margin:12px 0 0}
+.mark{display:none;font-size:12px;color:var(--mut);border:1px solid var(--line2);border-radius:20px;padding:0 9px;line-height:20px}
+.seen .mark{display:inline}.seen .new{display:none}
+article.seen,.picks li.seen{opacity:.55}article.seen:hover,.picks li.seen:hover{opacity:1}
+article.seen.fresh{border-left-color:var(--line)}
+html.hs .old{display:none}
 /* picks */
 .picks{list-style:none;margin:0;padding:4px 0;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
 .picks li{position:relative;padding:14px 20px;border-bottom:1px solid var(--line)}.picks li:last-child{border-bottom:0}
@@ -123,4 +136,30 @@ a:focus-visible{outline:2px solid var(--acc);outline-offset:3px;border-radius:4p
 <footer>摘要由 AI 根据公开资料生成，可能有误或不完整，请以原文为准。X 上的内容未经核实，仅反映作者的说法。所有内容版权归原作者所有，本站只提供摘要和原文链接。</footer>
 </main>
 <nav class="navbot"><a href="index.html">综合</a><a href="ai.html">AI 前沿</a><a href="sg.html">新加坡</a><a href="x.html">X 热帖</a><a href="archive.html" class=on>归档</a></nav>
+<script>(function(){try{
+var K='diting-seen',S={},d=document,h=d.documentElement,ls=window.localStorage;
+try{S=JSON.parse(ls.getItem(K)||'{}')}catch(e){}
+var now=Date.now();for(var k in S){if(now-S[k]>5184e6)delete S[k]}
+function save(){try{ls.setItem(K,JSON.stringify(S))}catch(e){}}
+var els=[].slice.call(d.querySelectorAll('[data-id]'));
+function paint(){var u={},n=0,t=0,i;
+ els.forEach(function(el){var s=!!S[el.dataset.id];el.classList.toggle('seen',s);u[el.dataset.id]=s});
+ for(i in u){t++;if(!u[i])n++}
+ [].forEach.call(d.querySelectorAll('.unseen'),function(x){x.textContent=n+' / '+t})}
+function mark(id){if(!S[id]){S[id]=Date.now();save();paint()}}
+paint();els.forEach(function(el){if(el.classList.contains('seen'))el.classList.add('old')});
+[].forEach.call(d.querySelectorAll('.js'),function(x){x.hidden=false});
+els.forEach(function(el){el.addEventListener('click',function(){mark(el.dataset.id)})});
+if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(en){
+ if(en.isIntersecting){en.target._t=setTimeout(function(){mark(en.target.dataset.id)},1500)}else{clearTimeout(en.target._t)}})},{threshold:.6});
+ els.forEach(function(el){io.observe(el)})}
+var hs=d.getElementById('hs');
+function applyHs(on){h.classList.toggle('hs',on);if(hs){hs.classList.toggle('on',on);hs.setAttribute('aria-pressed',on)}}
+try{applyHs(ls.getItem('diting-hs')==='1')}catch(e){}
+if(hs)hs.addEventListener('click',function(){var on=!h.classList.contains('hs');applyHs(on);try{ls.setItem('diting-hs',on?'1':'0')}catch(e){}});
+var ma=d.getElementById('ma');
+if(ma)ma.addEventListener('click',function(){els.forEach(function(el){S[el.dataset.id]=S[el.dataset.id]||Date.now()});save();paint()});
+var cm=d.getElementById('cm');
+if(cm){try{cm.checked=ls.getItem('diting-cm')==='1'}catch(e){}cm.addEventListener('change',function(){try{ls.setItem('diting-cm',cm.checked?'1':'0')}catch(e){}})}
+}catch(e){}})();</script>
 </body></html>
