@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'sha256-LJafnlhyBy9zlvaFaC5eKmoRTrtPwknV05zxD7dPDYY='; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'sha256-2wjfKpQJ/xKykW+tMCipw/a0PZ/0fW1h6K6kFue0XG4='; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>归档 · 谛听</title><style>
 :root{color-scheme:light;--bg:#f6f5fa;--surface:#fff;--surface2:#f1effa;--line:#e4e1ef;--line2:#d5d1e6;--ink:#15141f;--ink2:#4a495d;--mut:#66647e;
@@ -38,6 +38,7 @@ main{max-width:820px;margin:0 auto;padding:26px 18px 72px}
 .stats span{font-size:12.5px;color:var(--mut)}
 .hero .cap{margin-top:10px;font-size:12.5px;color:var(--mut)}
 .sub{color:var(--mut);font-size:14px;margin:4px 2px 22px}
+.updated.none .new{display:none}
 .updated{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--mut);font-size:13.5px;margin:12px 2px 0}
 .pagehead{margin:4px 0 6px}.pagehead h1{margin:0 0 4px;font:600 28px/1.25 var(--serif);letter-spacing:.06em}.pagehead .sub{margin:0 0 6px}
 .pagehead .sub a{color:var(--acc)}
@@ -74,7 +75,8 @@ article p{margin:0 0 8px;font-size:15.5px;color:var(--ink2)}
 .go{font-size:13px;color:var(--acc);font-weight:500}
 .chip{background:var(--acc-soft);color:var(--acc);border:1px solid var(--acc-line);border-radius:20px;padding:0 10px;font-size:12px;line-height:20px}
 .new{background:var(--new-soft);color:var(--new);border:1px solid color-mix(in srgb,var(--new) 40%,transparent);border-radius:20px;padding:0 9px;font-size:12px;line-height:20px;font-weight:600}
-article.fresh{border-left:3px solid var(--new)}
+.meta .new{display:none}.isnew .meta .new{display:inline-block}
+article.isnew{border-left:3px solid var(--new)}
 .cm:checked~main article p,.cm:checked~main article .go{display:none}
 .cm:checked~main article{padding:12px 18px;margin-bottom:8px;border-radius:12px;box-shadow:none}
 .cm:checked~main article h3{font-size:16.5px;margin:4px 0 2px}
@@ -87,8 +89,7 @@ article.fresh{border-left:3px solid var(--new)}
 .seenrow{margin:12px 0 0}
 .mark{display:none;font-size:12px;color:var(--mut);border:1px solid var(--line2);border-radius:20px;padding:0 9px;line-height:20px}
 .seen .mark{display:inline}.seen .new{display:none}
-article.seen,.picks li.seen{opacity:.55}article.seen:hover,.picks li.seen:hover{opacity:1}
-article.seen.fresh{border-left-color:var(--line)}
+article.seen,.picks li.seen{opacity:.78}article.seen:hover,.picks li.seen:hover{opacity:1}
 html.hs .old{display:none}
 /* picks */
 .picks{list-style:none;margin:0;padding:4px 0;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
@@ -142,17 +143,20 @@ try{S=JSON.parse(ls.getItem(K)||'{}')}catch(e){}
 var now=Date.now();for(var k in S){if(now-S[k]>5184e6)delete S[k]}
 function save(){try{ls.setItem(K,JSON.stringify(S))}catch(e){}}
 var els=[].slice.call(d.querySelectorAll('[data-id]'));
-function paint(){var u={},n=0,t=0,i;
- els.forEach(function(el){var s=!!S[el.dataset.id];el.classList.toggle('seen',s);u[el.dataset.id]=s});
+function paint(){var u={},n=0,t=0,i,nn={};
+ els.forEach(function(el){var id=el.dataset.id,s=!!S[id],nw=!s&&(+el.dataset.t)*1000>base;el.classList.toggle('seen',s);el.classList.toggle('isnew',nw);u[id]=s;if(nw)nn[id]=1});
+ var c=Object.keys(nn).length,nl=d.getElementById('nl');
+ if(nl){nl.textContent=c?'自上次访问新增 '+c+' 条未看':'自上次访问没有新的内容';nl.parentNode.classList.toggle('none',!c)}
  for(i in u){t++;if(!u[i])n++}
  [].forEach.call(d.querySelectorAll('.unseen'),function(x){x.textContent=n+' / '+t})}
+var base=0,nowt=Date.now();
+try{var last=+ls.getItem('diting-last')||0;base=+ls.getItem('diting-base')||0;
+ if(!last)base=nowt-864e5;else if(nowt-last>18e5)base=last;
+ ls.setItem('diting-base',String(base));ls.setItem('diting-last',String(nowt))}catch(e){base=nowt-864e5}
 function mark(id){if(!S[id]){S[id]=Date.now();save();paint()}}
 paint();els.forEach(function(el){if(el.classList.contains('seen'))el.classList.add('old')});
 [].forEach.call(d.querySelectorAll('.js'),function(x){x.hidden=false});
 els.forEach(function(el){el.addEventListener('click',function(){mark(el.dataset.id)})});
-if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(en){
- if(en.isIntersecting){en.target._t=setTimeout(function(){mark(en.target.dataset.id)},1500)}else{clearTimeout(en.target._t)}})},{threshold:.6});
- els.forEach(function(el){io.observe(el)})}
 var hs=d.getElementById('hs');
 function applyHs(on){h.classList.toggle('hs',on);if(hs){hs.classList.toggle('on',on);hs.setAttribute('aria-pressed',on)}}
 try{applyHs(ls.getItem('diting-hs')==='1')}catch(e){}
